@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import { fab } from '@fortawesome/free-brands-svg-icons';
@@ -27,7 +27,7 @@ library.add(fas, fab);
 function App() {
   return (
     <GeneratorProvider>
-      <Router basename="/p2b-selfintro-prod">
+      <Router>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/product" element={<Product />} />
