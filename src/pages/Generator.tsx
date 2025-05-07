@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../components/Layout/Layout';
 import GeneratorSteps from '../components/GeneratorSteps';
-import { useGenerator, WorkExperience, JobDetail } from '../contexts/GeneratorContext';
+import { useGenerator, WorkExperience } from '../contexts/GeneratorContext';
 
 // 導入實際資料
 import { companies } from '../data/companies';
@@ -12,20 +12,6 @@ import { jobPositions } from '../data/jobPositions';
 import { schools } from '../data/schools';
 import { departments } from '../data/departments';
 import { industries, jobCategories } from '../data/jobCategories';
-
-// 建議清單
-const COMPANY_SUGGESTIONS = [
-  '台積電', '鴻海', '聯發科', '中華電信', '台灣大哥大', '國泰金控', '富邦金控', '長榮航空', '台灣高鐵', '玉山銀行',
-  'Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'ASUS', 'Acer', '趨勢科技', '台灣微軟', '台灣雅虎'
-];
-const POSITION_SUGGESTIONS = [
-  '工程師', '產品經理', '設計師', '行銷專員', '專案經理', '資料分析師', '業務經理', '人資專員', '財務分析師', '客服專員',
-  '後端工程師', '前端工程師', 'UI/UX設計師', '系統架構師', '測試工程師', '營運經理', '品牌經理', '主管', '助理', '實習生'
-];
-const UNIVERSITY_SUGGESTIONS = [
-  '國立台灣大學', '國立清華大學', '國立交通大學', '國立成功大學', '國立政治大學', '國立中央大學', '國立台灣師範大學',
-  '國立台灣科技大學', '國立陽明交通大學', '國立中山大學', '國立中興大學', '國立中正大學', '國立東華大學', '國立高雄大學'
-];
 
 // 技能等級選項
 const SKILL_LEVELS = ['入門', '基礎', '中等', '精通', '專家'];
@@ -53,14 +39,12 @@ const Generator: React.FC = () => {
   
   const {
     name, setName,
-    age, setAge,
     occupation, setOccupation,
     jobDetail, setJobDetail,
     workExperiences, setWorkExperiences,
     educations, setEducations,
     skillList, setSkillList,
-    skills, setSkills,
-    achievements, setAchievements
+    setSkills
   } = useGenerator();
 
   // 自動提示狀態

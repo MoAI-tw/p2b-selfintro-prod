@@ -40,8 +40,8 @@ const Result: React.FC = () => {
   };
 
   // Handling regeneration
-  const handleRegenerate = () => {
-    const newContent = generateIntroduction();
+  const handleRegenerate = async () => {
+    const newContent = await generateIntroduction();
     
     // Save to history
     const newHistory = [...contentHistory.slice(0, currentHistoryIndex + 1), newContent];

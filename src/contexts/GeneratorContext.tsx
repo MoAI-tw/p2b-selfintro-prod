@@ -148,7 +148,7 @@ export const GeneratorProvider: React.FC<{ children: ReactNode }> = ({ children 
     // 教育背景
     if (educations.length > 0) {
       prompt += `教育背景：`;
-      educations.forEach((edu, idx) => {
+      educations.forEach((edu) => {
         if (edu.school || edu.major) {
           prompt += `\n- 學校：${edu.school}，學位：${edu.degree}，專業：${edu.major}，畢業年份：${edu.year}`;
         }
@@ -159,7 +159,7 @@ export const GeneratorProvider: React.FC<{ children: ReactNode }> = ({ children 
     // 工作經歷
     if (workExperiences.length > 0) {
       prompt += `工作經歷：`;
-      workExperiences.forEach((exp, idx) => {
+      workExperiences.forEach((exp) => {
         if (exp.company || exp.position || exp.description) {
           prompt += `\n- 公司：${exp.company}，職位：${exp.position}，內容：${exp.description}`;
         }

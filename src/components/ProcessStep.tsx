@@ -10,7 +10,6 @@ interface ProcessStepProps {
   buttonText: string;
   buttonLink: string;
   isReversed?: boolean;
-  stepNumber: number;
 }
 
 const ProcessStep: React.FC<ProcessStepProps> = ({
@@ -19,8 +18,7 @@ const ProcessStep: React.FC<ProcessStepProps> = ({
   icon,
   buttonText,
   buttonLink,
-  isReversed = false,
-  stepNumber
+  isReversed = false
 }) => {
   return (
     <div className="relative z-10 mb-12 md:mb-20">

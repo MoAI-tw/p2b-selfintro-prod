@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout/Layout';
 import GeneratorSteps from '../components/GeneratorSteps';
-import { useGenerator, ContentLength, FocusPoint } from '../contexts/GeneratorContext';
+import { useGenerator, FocusPoint } from '../contexts/GeneratorContext';
 
 const GenerationSettings: React.FC = () => {
   const navigate = useNavigate();

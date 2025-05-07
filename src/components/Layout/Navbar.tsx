@@ -5,7 +5,7 @@ import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This would come from authentication context in real app
+  const [isLoggedIn] = useState(false); // This would come from authentication context in real app
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
