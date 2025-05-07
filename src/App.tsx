@@ -27,7 +27,7 @@ library.add(fas, fab);
 function App() {
   return (
     <GeneratorProvider>
-      <Router>
+      <Router basename="/p2b-selfintro-prod">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/product" element={<Product />} />
