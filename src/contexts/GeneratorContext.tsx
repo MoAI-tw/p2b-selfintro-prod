@@ -208,6 +208,10 @@ export const GeneratorProvider: React.FC<{ children: ReactNode }> = ({ children 
         if (template.userPrompt) userPrompt = template.userPrompt;
       } catch {}
     }
+    
+    // 檢查是否有使用者提供的 API Key
+    const userApiKey = localStorage.getItem('test_api_key');
+    
     // 組裝 userPrompt 並做變數替換
     let prompt = '';
     if (userPrompt) {
@@ -236,27 +240,71 @@ export const GeneratorProvider: React.FC<{ children: ReactNode }> = ({ children 
       prompt = buildPrompt();
     }
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Instead of directly using the API key in client-side code,
+      // we'd ideally have a backend API that handles the OpenAI request
+      // For temporary solution, you can use a function that doesn't expose the key directly
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
         },
         body: JSON.stringify({
+          systemPrompt,
+          userPrompt: prompt,
           model: 'gpt-3.5-turbo',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 2048,
-          temperature: 0.7
+          maxTokens: 2048,
+          temperature: 0.7,
+          apiKey: userApiKey || undefined // 優先使用使用者提供的 API Key
         })
       });
+      
+      // For local development without a backend, add a fallback
+      // This is for demonstration only and should be replaced with proper backend implementation
+      if (!response.ok && response.status === 404) {
+        console.warn('API endpoint not found, falling back to direct API call');
+        console.warn('WARNING: This approach exposes API keys and should not be used in production!');
+        
+        // 優先使用使用者提供的 API Key
+        const openaiApiKey = userApiKey || import.meta.env.VITE_OPENAI_API_KEY;
+        
+        if (!openaiApiKey) {
+          throw new Error('未提供 API Key，請在測試頁面設定您的 OpenAI API Key');
+        }
+        
+        // Fallback - only for development, not for production use
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: prompt }
+            ],
+            max_tokens: 2048,
+            temperature: 0.7
+          })
+        });
+        
+        if (!openaiResponse.ok) {
+          throw new Error('API call failed');
+        }
+        
+        const data = await openaiResponse.json();
+        const content = data.choices?.[0]?.message?.content?.trim() || '';
+        setGeneratedContent(content);
+        return content;
+      }
+      
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim() || '';
+      const content = data.content || '';
       setGeneratedContent(content);
       return content;
     } catch (err) {
+      console.error('Error generating content:', err);
       setGeneratedContent('⚠️ 產生內容時發生錯誤，請稍後再試。');
       return '⚠️ 產生內容時發生錯誤，請稍後再試。';
     }

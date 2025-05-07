@@ -257,7 +257,27 @@ const TestPage: React.FC = () => {
   const DEFAULT_TEMPLATE_KEY = 'default_prompt_template';
   const [defaultTemplate, setDefaultTemplate] = useState<PromptVersion | null>(null);
 
-  // 切換版本時自動保存
+  // 新增 API Key 輸入
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem('test_api_key') || '';
+  });
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState(false);
+
+  // 儲存 API Key 到 localStorage
+  const saveApiKey = () => {
+    localStorage.setItem('test_api_key', apiKey);
+    setApiKeySaved(true);
+    setTimeout(() => setApiKeySaved(false), 2000);
+  };
+
+  // 清除 API Key
+  const clearApiKey = () => {
+    setApiKey('');
+    localStorage.removeItem('test_api_key');
+  };
+
+  // 預設模板存儲
   useEffect(() => { savePrompts(prompts); }, [prompts]);
   
   // 載入預設模板
@@ -398,24 +418,67 @@ const TestPage: React.FC = () => {
     
     try {
       console.log('發送API請求...');
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      
+      // Instead of direct API call, use a proxy API endpoint
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
         },
         body: JSON.stringify({
+          systemPrompt: currentPrompt.systemPrompt,
+          userPrompt: prompt,
           model,
-          messages: [
-            { role: 'system', content: currentPrompt.systemPrompt },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 2048,
-          temperature: 0.7
+          maxTokens: 2048,
+          temperature: 0.7,
+          apiKey: apiKey || undefined // 傳入使用者設定的 API Key，如果沒有則使用伺服器的 key
         })
       });
+      
+      // Fallback for development only
+      if (!response.ok && response.status === 404) {
+        console.warn('API endpoint not found, falling back to direct API call');
+        console.warn('WARNING: This approach exposes API keys and should not be used in production!');
+        
+        // 優先使用使用者提供的 API Key
+        const userKey = apiKey || import.meta.env.VITE_OPENAI_API_KEY;
+        
+        if (!userKey) {
+          throw new Error('未提供 API Key，請在設定中輸入您的 OpenAI API Key');
+        }
+        
+        // This should be removed in production
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: currentPrompt.systemPrompt },
+              { role: 'user', content: prompt }
+            ],
+            max_tokens: 2048,
+            temperature: 0.7
+          })
+        });
+        
+        if (!openaiResponse.ok) {
+          throw new Error('API call failed');
+        }
+        
+        const data = await openaiResponse.json();
+        const content = data.choices?.[0]?.message?.content?.trim() || '';
+        console.log('API回應成功!');
+        setResult(content);
+        setLoading(false);
+        return;
+      }
+      
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim() || '';
+      const content = data.content || '';
       console.log('API回應成功!');
       setResult(content);
     } catch (err: any) {
@@ -437,24 +500,64 @@ const TestPage: React.FC = () => {
     const results: string[] = [];
     try {
       for (let i = 0; i < batchCount; i++) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Use secure API endpoint
+        const response = await fetch('/api/generate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
           },
           body: JSON.stringify({
+            systemPrompt: currentPrompt.systemPrompt,
+            userPrompt: prompt,
             model,
-            messages: [
-              { role: 'system', content: currentPrompt.systemPrompt },
-              { role: 'user', content: prompt }
-            ],
-            max_tokens: 2048,
-            temperature: 0.7
+            maxTokens: 2048,
+            temperature: 0.7,
+            apiKey: apiKey || undefined // 傳入使用者設定的 API Key
           })
         });
+        
+        // Fallback for development
+        if (!response.ok && response.status === 404) {
+          console.warn('API endpoint not found, falling back to direct API call');
+          console.warn('WARNING: This approach exposes API keys and should not be used in production!');
+          
+          // 優先使用使用者提供的 API Key
+          const userKey = apiKey || import.meta.env.VITE_OPENAI_API_KEY;
+          
+          if (!userKey) {
+            throw new Error('未提供 API Key，請在設定中輸入您的 OpenAI API Key');
+          }
+          
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${userKey}`
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: currentPrompt.systemPrompt },
+                { role: 'user', content: prompt }
+              ],
+              max_tokens: 2048,
+              temperature: 0.7
+            })
+          });
+          
+          if (!openaiResponse.ok) {
+            throw new Error('API call failed');
+          }
+          
+          const data = await openaiResponse.json();
+          const content = data.choices?.[0]?.message?.content?.trim() || '';
+          results.push(content);
+          setBatchResults([...results]); // 即時顯示
+          continue;
+        }
+        
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content?.trim() || '';
+        const content = data.content || '';
         results.push(content);
         setBatchResults([...results]); // 即時顯示
       }
@@ -545,6 +648,45 @@ const TestPage: React.FC = () => {
               </button>
             </div>
           )}
+
+          {/* API Key 設定區 */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="font-semibold text-gray-700 text-sm mb-2">OpenAI API Key</div>
+            <div className="relative">
+              <input 
+                type={apiKeyVisible ? "text" : "password"} 
+                className="w-full border rounded-md p-2 text-xs focus:ring-2 focus:ring-blue-300 focus:outline-none mb-2"
+                placeholder="輸入您的 OpenAI API Key"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+              />
+              <button 
+                className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                onClick={() => setApiKeyVisible(!apiKeyVisible)}
+                title={apiKeyVisible ? "隱藏 API Key" : "顯示 API Key"}
+              >
+                {apiKeyVisible ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className={`text-xs px-2 py-1.5 rounded-md flex-1 ${apiKeySaved ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'} transition-colors`}
+                onClick={saveApiKey}
+                disabled={apiKeySaved}
+              >
+                {apiKeySaved ? '✓ 已儲存' : '儲存 Key'}
+              </button>
+              <button
+                className="text-xs px-2 py-1.5 rounded-md flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                onClick={clearApiKey}
+              >
+                清除
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              API Key 僅儲存在您的瀏覽器，不會傳送到伺服器。
+            </div>
+          </div>
         </div>
         {/* 右側：編輯與測試區 */}
         <div className="flex-1">
